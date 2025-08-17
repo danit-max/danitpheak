@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="km">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>វិចិត្រសាលរូបថត</title>
+  <style>
+    :root {
+      --bg:#f6f7fb; --card:#fff; --text:#0f172a; --muted:#64748b; --primary:#111827;
+      --danger:#dc2626; --download:#2563eb; --radius:14px;
+    }
+    *{box-sizing:border-box}
+    body{margin:0;font-family:"Noto Sans Khmer",system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:var(--bg);color:var(--text)}
+    header{background:var(--primary);color:#fff;padding:18px 16px;text-align:center}
+    header h1{margin:0;font-size:22px}
+    header p{margin:6px 0 0;font-size:14px;color:#d1d5db}
+
+    .container{max-width:1100px;margin:0 auto;padding:16px}
+
+    .controls{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:center;margin-bottom:12px}
+    input[type=file]{display:none}
+    .btn{border:0;border-radius:10px;padding:10px 14px;font-weight:600;cursor:pointer}
+    .btn-primary{background:var(--primary);color:#fff}
+    .btn-muted{background:#e5e7eb;color:#111827}
+
+    .dropzone{border:2px dashed #cbd5e1;border-radius:var(--radius);padding:18px;text-align:center;background:#fff;color:var(--muted)}
+    .dropzone.drag{border-color:#111827;background:#f1f5f9;color:#111827}
+
+    .gallery{display:grid;gap:14px;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));margin-top:16px}
+    .card{background:var(--card);border:1px solid #e5e7eb;border-radius:var(--radius);overflow:hidden;box-shadow:0 2px 8px rgba(15,23,42,.06)}
+    .thumb{width:100%;height:180px;object-fit:cover;display:block;background:#f1f5f9}
+    .footer{display:flex;gap:8px;justify-content:space-between;align-items:center;padding:10px;border-top:1px solid #e5e7eb}
+    .title{font-size:13px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:55%}
+    .actions{display:flex;gap:8px}
+    .btn-sm{font-size:12px;padding:6px 10px;border-radius:8px}
+    .btn-danger{background:var(--danger);color:#fff}
+    .btn-download{background:var(--download);color:#fff}
+
+    footer{margin:24px 0 10px;text-align:center;color:var(--muted);font-size:12px}
+  </style>
+</head>
+<body>
+  <header>
+    <h1>វិចិត្រសាលរូបថត</h1>
+    <p>អាប់ឡូដបានច្រើន · លុបបាន · ទាញយកបាន — ប៊ូតុងនៅខាងក្រោមរូប</p>
+  </header>
+
+  <div class="container">
+    <div class="controls">
+      <label class="btn btn-primary">
+        ជ្រើសរើសរូបភាព
+        <input id="fileInput" type="file" accept="image/*" multiple />
+      </label>
+      <button id="addMore" class="btn btn-muted">ថែមរូបម្ដងទៀត</button>
+    </div>
+
+    <div id="dropzone" class="dropzone">អូស និងទម្លាក់ រូបភាពនៅទីនេះ</div>
+
+    <main id="gallery" class="gallery" aria-live="polite"></main>
+
+    <footer>© <span id="year"></span> វិចិត្រសាលរូបថត — HTML/CSS/JS សុទ្ធ</footer>
+  </div>
+
+  <script>
+    const fileInput = document.getElementById("fileInput");
+    const addMoreBtn = document.getElementById("addMore");
+    const dropzone = document.getElementById("dropzone");
+    const gallery = document.getElementById("gallery");
+    document.getElementById("year").textContent = new Date().getFullYear();
+
+    addMoreBtn.addEventListener("click", () => fileInput.click());
+
+    fileInput.addEventListener("change", (e) => {
+      const files = Array.from(e.target.files || []);
+      files.forEach(addImageCard);
+      fileInput.value = ""; // reset so same files can be reselected
+    });
+
+    // Drag & Drop handlers
+    const prevent = (e) => { e.preventDefault(); e.stopPropagation(); };
+    ["dragenter","dragover"].forEach(ev => dropzone.addEventListener(ev, (e)=>{ prevent(e); dropzone.classList.add("drag"); }));
+    ;["dragleave","drop"].forEach(ev => dropzone.addEventListener(ev, (e)=>{ prevent(e); dropzone.classList.remove("drag"); }));
+    dropzone.addEventListener("drop", (e)=>{
+      const files = Array.from(e.dataTransfer.files || []).filter(f => f.type.startsWith("image/"));
+      files.forEach(addImageCard);
+    });
+
+    function addImageCard(file){
+      const objectUrl = URL.createObjectURL(file);
+      const card = document.createElement("article");
+      card.className = "card";
+
+      const img = document.createElement("img");
+      img.className = "thumb";
+      img.src = objectUrl;
+      img.alt = file.name.replace(/\.[^.]+$/, "");
+
+      const footer = document.createElement("div");
+      footer.className = "footer";
+
+      const title = document.createElement("div");
+      title.className = "title";
+      title.title = file.name;
+      title.textContent = file.name;
+
+      const actions = document.createElement("div");
+      actions.className = "actions";
+
+      const del = document.createElement("button");
+      del.className = "btn-sm btn-danger";
+      del.textContent = "លុប";
+
+      const download = document.createElement("a");
+      download.className = "btn-sm btn-download";
+      download.textContent = "ទាញយក";
+      download.href = objectUrl;
+      download.download = file.name; // keep original name
+
+      del.addEventListener("click", () => {
+        URL.revokeObjectURL(objectUrl); // free memory
+        card.remove();
+      });
+
+      actions.appendChild(del);
+      actions.appendChild(download);
+
+      footer.appendChild(title);
+      footer.appendChild(actions);
+
+      card.appendChild(img);
+      card.appendChild(footer);
+
+      gallery.prepend(card);
+    }
+  </script>
+</body>
+</html>
